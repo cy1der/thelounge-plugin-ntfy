@@ -1,0 +1,53 @@
+https://thelounge.chat/docs/api
+
+api
+    Commands
+        add(commandText: string, command: Command)
+    Config
+        getConfig()
+        getPersistentStorageDir()
+    Logger
+        error(...args)
+        warn(...args)
+        info(...args)
+        debug(...args)
+    Stylesheets
+        addFile(filename: String)
+
+command
+    input(client: Client, target: Target, command: String, args: String[])
+    allowDisconnected: bool
+
+target
+    network: String
+    chan: String
+
+client
+    runAsUser(command: String, targetId: String)
+    createChannel(attributes: Attributes)
+    sendToBrowser(event: String, data: Object)
+    getChannel(channelId: Number)
+    sendMessage(text: String, chan: Chan)
+
+attributes
+    id: Number
+    messages: Msg[]
+    name: string
+    key: String
+    topic: String
+    type: Chan.Type
+    state: Chan.State
+    firstUnread: Number
+    unread: Number
+    highlight: Number
+    users: String -> User Map
+
+Chan.Type
+    CHANNEL
+    LOBBY
+    QUERY
+    SPECIAL
+
+Chan.State
+    PARTED
+    JOINED

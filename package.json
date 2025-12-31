@@ -1,0 +1,36 @@
+{
+  "name": "thelounge-plugin-ntfy",
+  "version": "1.0.0",
+  "description": "A plugin for The Lounge that sends push notifications via ntfy when mentioned",
+  "keywords": [
+    "thelounge",
+    "thelounge-plugin",
+    "ntfy",
+    "irc"
+  ],
+  "thelounge": {
+    "name": "ntfy",
+    "type": "plugin",
+    "supports": ">=4.0.0"
+  },
+  "homepage": "https://github.com/cy1der/thelounge-plugin-ntfy#readme",
+  "bugs": {
+    "url": "https://github.com/cy1der/thelounge-plugin-ntfy/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cy1der/thelounge-plugin-ntfy.git"
+  },
+  "license": "MIT",
+  "author": "cy1der",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {},
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^3.0.1",
+    "ntfy": "^1.11.8",
+    "thelounge": "^4.4.3"
+  }
+}

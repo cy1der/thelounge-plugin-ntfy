@@ -1,0 +1,10 @@
+services:
+  thelounge:
+    image: ghcr.io/thelounge/thelounge:latest
+    container_name: thelounge
+    network_mode: bridge
+    ports:
+      - 9000:9000
+    restart: unless-stopped
+    volumes:
+      - $PWD/tl:/var/opt/thelounge
