@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const Ajv = require("ajv").default;
+const Ajv2019 = require("ajv/dist/2019").default;
 const addFormats = require("ajv-formats");
 const addErrors = require("ajv-errors");
 
@@ -12,6 +12,7 @@ const DEFAULT_CONFIG = {
     topic: null, // Intentionally left null to force user configuration
     username: null,
     password: null,
+    token: null,
   },
 };
 
@@ -20,6 +21,7 @@ const ALLOWED_KEYS = new Set([
   "ntfy.topic",
   "ntfy.username",
   "ntfy.password",
+  "ntfy.token",
 ]);
 
 const userConfigSchema = {
@@ -44,16 +46,59 @@ const userConfigSchema = {
         },
         username: { type: "string", nullable: true },
         password: { type: "string", nullable: true },
+        token: {
+          type: "string",
+          format: "ntfy-token",
+          nullable: true,
+          errorMessage: "Invalid ntfy token, must start with 'tk_'",
+        },
       },
-      errorMessage: "Missing or invalid ntfy configuration",
+      allOf: [
+        {
+          if: {
+            properties: { username: { type: "string" } },
+            required: ["username"],
+          },
+          then: {
+            properties: { password: { type: "string" } },
+            required: ["password"],
+            errorMessage: {
+              properties: {
+                password: "Password is required when username is set",
+              },
+            },
+          },
+        },
+        {
+          if: {
+            properties: { password: { type: "string" } },
+            required: ["password"],
+          },
+          then: {
+            properties: { username: { type: "string" } },
+            required: ["username"],
+            errorMessage: {
+              properties: {
+                username: "Username is required when password is set",
+              },
+            },
+          },
+        },
+      ],
+      dependentRequired: {
+        username: ["password"],
+        password: ["username"],
+      },
     },
   },
-  errorMessage: "Missing or invalid configuration",
 };
 
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv2019({ allErrors: true });
 addFormats(ajv);
 addErrors(ajv);
+ajv.addFormat("ntfy-token", {
+  validate: (data) => typeof data === "string" && data.startsWith("tk_"),
+});
 
 let rootDir = null;
 

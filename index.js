@@ -1,30 +1,129 @@
 "use strict";
 
 const { PluginLogger } = require("./src/logger.js");
+const { createHandler } = require("./src/handler.js");
 const {
   setRootDir,
   loadUserConfig,
   saveUserSetting,
 } = require("./src/config.js");
 
+// user -> Map<network.uuid -> handler and client>
+const globalActiveListeners = new Map();
+
 const ntfyCommand = {
-  input: (client, target, _command, args) => {
+  input: (client, target, command, args) => {
     const say = (message) => {
       client.sendMessage(message, target.chan);
     };
 
-    const subcommand = args;
+    const helpMessage = () => {
+      say(`${command} command help:`);
+      say(`/${command} start - Start the ntfy listener for this network`);
+      say(`/${command} stop - Stop the ntfy listener for this network`);
+      say(
+        `/${command} config set <setting_key> <setting_value> - Set a configuration setting`
+      );
+      say(
+        `/${command} config remove <setting_key> - Set configuration setting to null`
+      );
+      say(
+        `/${command} config print - Print the current configuration with warnings if any`
+      );
+    };
 
-    switch (subcommand[0]) {
+    const subcommand = args;
+    const network = target.network;
+
+    if (subcommand.length === 0) {
+      helpMessage();
+      return;
+    }
+
+    if (typeof subcommand[0] !== "string") {
+      helpMessage();
+      return;
+    }
+
+    switch (subcommand[0].toLowerCase()) {
+      case "start": {
+        const [_, errors] = loadUserConfig(client.client.name);
+
+        if (errors.length > 0) {
+          say("Cannot start ntfy listener due to invalid configuration:");
+          for (const error of errors) {
+            say(`- ${error.instancePath} ${error.message}`);
+          }
+          return;
+        }
+
+        const userListeners = globalActiveListeners.get(client.client.name);
+
+        if (
+          userListeners &&
+          typeof userListeners.has === "function" &&
+          userListeners.has(network.uuid)
+        ) {
+          say("ntfy listener is already running for this network");
+          return;
+        }
+
+        const handler = createHandler(client, network);
+        network.irc.on("privmsg", handler);
+
+        if (!userListeners) {
+          const map = new Map();
+          map.set(network.uuid, { handler: handler, client: client });
+          globalActiveListeners.set(client.client.name, map);
+        } else {
+          userListeners.set(network.uuid, { handler: handler, client: client });
+        }
+
+        say("ntfy listener started for this network");
+
+        break;
+      }
+
+      case "stop": {
+        const userListeners = globalActiveListeners.get(client.client.name);
+
+        if (
+          !userListeners ||
+          typeof userListeners.has !== "function" ||
+          !userListeners.has(network.uuid)
+        ) {
+          say("ntfy listener is not running for this network");
+          return;
+        }
+
+        const { handler } = userListeners.get(network.uuid);
+        network.irc.removeListener("privmsg", handler);
+        userListeners.delete(network.uuid);
+
+        say("ntfy listener stopped for this network");
+
+        break;
+      }
+
       case "config": {
         const subsubcommand = subcommand.slice(1);
 
-        switch (subsubcommand[0]) {
+        if (subsubcommand.length === 0) {
+          helpMessage();
+          return;
+        }
+
+        if (typeof subsubcommand[0] !== "string") {
+          helpMessage();
+          return;
+        }
+
+        switch (subsubcommand[0].toLowerCase()) {
           case "set": {
             const subsubargs = subsubcommand.slice(1);
 
             if (subsubargs.length < 2) {
-              say("Usage: ntfy config set <setting_key> <setting_value>");
+              helpMessage();
               return;
             }
 
@@ -44,17 +143,16 @@ const ntfyCommand = {
           case "remove": {
             const subsubargs = subsubcommand.slice(1);
 
-            if (subsubargs.length < 2) {
-              say("Usage: ntfy config remove <setting_key>");
+            if (subsubargs.length < 1) {
+              helpMessage();
               return;
             }
 
             const settingKey = subsubargs[0];
-            const settingValue = null;
             const response = saveUserSetting(
               client.client.name,
               settingKey,
-              settingValue
+              null
             );
 
             say(response);
@@ -88,11 +186,21 @@ const ntfyCommand = {
               }
             }
 
+            if (
+              userConfig.ntfy.token &&
+              userConfig.ntfy.username &&
+              userConfig.ntfy.password
+            ) {
+              say(
+                "Warning: Both ntfy.token and ntfy.username/password are set, ntfy.token will be used for authentication"
+              );
+            }
+
             break;
           }
 
           default: {
-            say("Unknown ntfy config subcommand"); // TODO: help message
+            helpMessage();
             break;
           }
         }
@@ -101,7 +209,7 @@ const ntfyCommand = {
       }
 
       default: {
-        say("Unknown ntfy subcommand"); // TODO: help message
+        helpMessage();
         break;
       }
     }
