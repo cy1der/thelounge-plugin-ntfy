@@ -12,7 +12,7 @@ const {
 const globalActiveListeners = new Map();
 
 const ntfyCommand = {
-  input: (client, target, command, args) => {
+  input: async (client, target, command, args) => {
     const say = (message) => {
       client.sendMessage(message, target.chan);
     };
@@ -21,6 +21,10 @@ const ntfyCommand = {
       say(`${command} command help:`);
       say(`/${command} start - Start the ntfy listener for this network`);
       say(`/${command} stop - Stop the ntfy listener for this network`);
+      say(
+        `/${command} status - Show the ntfy listener status for this network`
+      );
+      say(`/${command} test - Send a test notification`);
       say(
         `/${command} config set <setting_key> <setting_value> - Set a configuration setting`
       );
@@ -101,6 +105,67 @@ const ntfyCommand = {
         userListeners.delete(network.uuid);
 
         say("ntfy listener stopped for this network");
+
+        break;
+      }
+
+      case "status": {
+        const userListeners = globalActiveListeners.get(client.client.name);
+
+        if (
+          userListeners &&
+          typeof userListeners.has === "function" &&
+          userListeners.has(network.uuid)
+        ) {
+          say("ntfy listener is running for this network");
+        } else {
+          say("ntfy listener is not running for this network");
+        }
+
+        break;
+      }
+
+      case "test": {
+        const { NtfyClient, MessagePriority } = await import("ntfy");
+
+        const [userConfig, errors] = loadUserConfig(client.client.name);
+
+        if (errors.length > 0) {
+          say("Cannot test ntfy due to invalid configuration:");
+          for (const error of errors) {
+            say(`- ${error.instancePath} ${error.message}`);
+          }
+          return;
+        }
+
+        let ntfyAuth;
+
+        if (userConfig.ntfy.token) {
+          ntfyAuth = userConfig.ntfy.token;
+        } else if (userConfig.ntfy.username && userConfig.ntfy.password) {
+          ntfyAuth = {
+            username: userConfig.ntfy.username,
+            password: userConfig.ntfy.password,
+          };
+        }
+
+        const ntfyClient = new NtfyClient({
+          server: userConfig.ntfy.server,
+          topic: userConfig.ntfy.topic,
+          priority: MessagePriority.HIGH,
+          tags: ["speech_balloon"],
+          authorization: ntfyAuth,
+        });
+
+        try {
+          ntfyClient.publish({
+            title: `${network.name} #afakechannel: ntfy`,
+            message: `Hello, ${client.client.name}!`,
+          });
+          say(`Sent to ${userConfig.ntfy.server}/${userConfig.ntfy.topic}`);
+        } catch (error) {
+          say(`Failed to send test notification: ${error.message}`);
+        }
 
         break;
       }

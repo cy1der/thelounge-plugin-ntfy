@@ -18,6 +18,8 @@ This plugin introduces the `/ntfy` command, subcommands are:
 
 - `/ntfy start`: Start the ntfy listener for the network
 - `/ntfy stop`: Stop the ntfy listener for the network
+- `/ntfy status`: Show the ntfy listener status for this network
+- `/ntfy test`: Send a test notification
 - `/ntfy config`: Config commands
   - `/ntfy config set <setting_key> <setting_value>`: Set a configuration setting
   - `/ntfy config remove <setting_key>`: Set a configuration setting to null
