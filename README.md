@@ -1,5 +1,8 @@
 # The Lounge ntfy Plugin
 
+![NPM Version](https://img.shields.io/npm/v/thelounge-plugin-ntfy?style=for-the-badge)
+![NPM Downloads](https://img.shields.io/npm/dy/thelounge-plugin-ntfy?style=for-the-badge)
+
 A plugin for [The Lounge](https://thelounge.chat/) that sends a message to an [ntfy](https://ntfy.sh/) server whenever you are mentioned in a chat.
 
 ## Installation
