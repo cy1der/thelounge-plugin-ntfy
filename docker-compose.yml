@@ -8,3 +8,7 @@ services:
     restart: unless-stopped
     volumes:
       - $PWD/tl:/var/opt/thelounge
+      - $PWD/src:/var/opt/thelounge/packages/thelounge-plugin-ntfy/src
+      - $PWD/index.js:/var/opt/thelounge/packages/thelounge-plugin-ntfy/index.js
+      - $PWD/package.json:/var/opt/thelounge/packages/thelounge-plugin-ntfy/package.json
+      - $PWD/package-lock.json:/var/opt/thelounge/packages/thelounge-plugin-ntfy/package-lock.json

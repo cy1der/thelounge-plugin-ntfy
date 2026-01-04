@@ -14,6 +14,9 @@ const DEFAULT_CONFIG = {
     password: null,
     token: null,
   },
+  config: {
+    notify_on_private_messages: false,
+  },
 };
 
 const ALLOWED_KEYS = new Set([
@@ -22,12 +25,15 @@ const ALLOWED_KEYS = new Set([
   "ntfy.username",
   "ntfy.password",
   "ntfy.token",
+  "config.notify_on_private_messages",
 ]);
+
+const BOOLEAN_KEYS = new Set(["config.notify_on_private_messages"]);
 
 const userConfigSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["ntfy"],
+  required: ["ntfy", "config"],
   properties: {
     ntfy: {
       type: "object",
@@ -88,6 +94,17 @@ const userConfigSchema = {
       dependentRequired: {
         username: ["password"],
         password: ["username"],
+      },
+    },
+    config: {
+      type: "object",
+      additionalProperties: false,
+      required: ["notify_on_private_messages"],
+      properties: {
+        notify_on_private_messages: {
+          type: "boolean",
+          default: false,
+        },
       },
     },
   },
@@ -152,6 +169,24 @@ function saveUserSetting(username, settingKey, settingValue) {
       const key = keys[i];
       if (key in curr) {
         curr = curr[key];
+      }
+    }
+
+    if (settingValue && typeof settingValue !== "string") {
+      return `Error: expected value to be a string`;
+    }
+
+    if (BOOLEAN_KEYS.has(settingKey)) {
+      try {
+        settingValue = settingValue
+          ? JSON.parse(settingValue.toLowerCase())
+          : false;
+
+        if (typeof settingValue !== "boolean") {
+          return `Invalid value for ${settingKey}, expected a boolean`;
+        }
+      } catch {
+        return `Invalid value for ${settingKey}, expected a boolean`;
       }
     }
 

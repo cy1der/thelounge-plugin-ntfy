@@ -1,6 +1,6 @@
 {
   "name": "thelounge-plugin-ntfy",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A plugin for The Lounge that sends push notifications via ntfy when highlighted",
   "keywords": [
     "thelounge",

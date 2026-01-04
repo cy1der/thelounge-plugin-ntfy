@@ -41,6 +41,14 @@ To start/stop sending push notifications in the desired network, enter:
 /ntfy start/stop
 ```
 
+## Private Messages
+
+By default, you will only be notified when you are mentioned, **this includes messages sent privately to you**. If you want to be notified of all private messages, enter this command and start the notifier like usual:
+
+```
+/ntfy config set config.notify_on_private_messages true
+```
+
 ## License
 
 This plugin is licensed under [MIT](https://opensource.org/license/mit)
