@@ -19,8 +19,8 @@ function createHandler(client, network) {
     let notify = false;
     let userConfig;
 
-    if (mentioned) {
-      // Mentions always notify
+    if (mentioned && !isPM) {
+      // Mentions always notify in channels
       notify = true;
     } else if (isPM) {
       // PMs notify only if enabled in config for this network
