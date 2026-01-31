@@ -24,8 +24,10 @@ This plugin introduces the `/ntfy` command, subcommands are:
 - `/ntfy status`: Show the ntfy listener status for this network
 - `/ntfy test`: Send a test notification
 - `/ntfy config`: Config commands
-  - `/ntfy config set <setting_key> <setting_value>`: Set a configuration setting
-  - `/ntfy config remove <setting_key>`: Set a configuration setting to null
+  - `/ntfy config set <setting_key> <setting_value>`: Set a global configuration setting
+  - `/ntfy config remove <setting_key>`: Set a global configuration setting to null
+  - `/ntfy config network set <setting_key> <setting_value>`: Set a per-network setting for this network
+  - `/ntfy config network remove <setting_key>`: Remove per-network setting for this network
   - `/ntfy config print`: Print the current configuration with warnings if any
 
 ## Setup
@@ -46,11 +48,13 @@ To start/stop sending push notifications in the desired network, enter:
 
 ## Private Messages
 
-By default, you will only be notified when you are mentioned, **this includes messages sent privately to you**. If you want to be notified of all private messages, enter this command and start the notifier like usual:
+By default, you will only be notified when you are mentioned, **this includes messages sent privately to you**. If you want to be notified of all private messages on a specific network, enter this command while connected to that network and start the notifier like usual:
 
 ```
-/ntfy config set config.notify_on_private_messages true
+/ntfy config network set config.notify_on_private_messages true
 ```
+
+This setting is per-network, so you can enable it for some networks and disable it for others.
 
 ## License
 

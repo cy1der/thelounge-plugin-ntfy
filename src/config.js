@@ -21,20 +21,21 @@ const DEFAULT_CONFIG = {
     token: null,
   },
   config: {
-    notify_on_private_messages: false,
+    notify_on_private_messages: {}, // Per-network: { "network-uuid": true/false }
   },
 };
 
-const ALLOWED_KEYS = new Set([
+const GLOBAL_KEYS = new Set([
   "ntfy.server",
   "ntfy.topic",
   "ntfy.username",
   "ntfy.password",
   "ntfy.token",
-  "config.notify_on_private_messages",
 ]);
+const GLOBAL_BOOLEAN_KEYS = new Set([]);
 
-const BOOLEAN_KEYS = new Set(["config.notify_on_private_messages"]);
+const PER_NETWORK_KEYS = new Set(["config.notify_on_private_messages"]);
+const PER_NETWORK_BOOLEAN_KEYS = new Set(["config.notify_on_private_messages"]);
 
 const SENSITIVE_KEYS = new Set(["ntfy.password", "ntfy.token"]);
 
@@ -110,8 +111,9 @@ const userConfigSchema = {
       required: ["notify_on_private_messages"],
       properties: {
         notify_on_private_messages: {
-          type: "boolean",
-          default: false,
+          type: "object",
+          additionalProperties: { type: ["boolean", "string"] },
+          default: {},
         },
       },
     },
@@ -227,7 +229,7 @@ function saveUserSetting(username, settingKey, settingValue) {
     throw new Error("Root directory is not set");
   }
 
-  if (ALLOWED_KEYS.has(settingKey)) {
+  if (GLOBAL_KEYS.has(settingKey)) {
     let userConfig = loadUserConfig(username)[0];
 
     const keys = settingKey.split(".");
@@ -245,7 +247,7 @@ function saveUserSetting(username, settingKey, settingValue) {
       return `Error: expected value to be a string`;
     }
 
-    if (BOOLEAN_KEYS.has(settingKey)) {
+    if (GLOBAL_BOOLEAN_KEYS.has(settingKey)) {
       try {
         settingValue = settingValue
           ? JSON.parse(settingValue.toLowerCase())
@@ -276,12 +278,103 @@ function saveUserSetting(username, settingKey, settingValue) {
   }
 
   return `Invalid setting ${settingKey}, allowed settings are: ${Array.from(
-    ALLOWED_KEYS,
+    GLOBAL_KEYS,
   ).join(", ")}`;
+}
+
+function saveNetworkSetting(username, settingKey, networkUuid, settingValue) {
+  if (!rootDir) {
+    throw new Error("Root directory is not set");
+  }
+
+  if (!PER_NETWORK_KEYS.has(settingKey)) {
+    return `Invalid per-network setting ${settingKey}, allowed settings are: ${Array.from(
+      PER_NETWORK_KEYS,
+    ).join(", ")}`;
+  }
+
+  let userConfig = loadUserConfig(username)[0];
+
+  const keys = settingKey.split(".");
+
+  let curr = userConfig;
+
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (key in curr) {
+      curr = curr[key];
+    }
+  }
+
+  const finalKey = keys[keys.length - 1];
+
+  if (!curr[finalKey] || typeof curr[finalKey] !== "object") {
+    curr[finalKey] = {};
+  }
+
+  if (settingValue === null) {
+    delete curr[finalKey][networkUuid];
+  } else if (PER_NETWORK_BOOLEAN_KEYS.has(settingKey)) {
+    try {
+      const boolValue = JSON.parse(settingValue.toLowerCase());
+
+      if (typeof boolValue !== "boolean") {
+        return `Invalid value for ${settingKey}, expected a boolean`;
+      }
+
+      curr[finalKey][networkUuid] = boolValue;
+    } catch {
+      return `Invalid value for ${settingKey}, expected a boolean (true/false)`;
+    }
+  } else {
+    curr[finalKey][networkUuid] = settingValue;
+  }
+
+  const configToSave = encryptSensitiveFields(userConfig);
+
+  const userConfigPath = path.join(rootDir, "config", `${username}.json`);
+
+  fs.mkdirSync(path.dirname(userConfigPath), { recursive: true });
+  fs.writeFileSync(
+    userConfigPath,
+    JSON.stringify(configToSave, null, 2),
+    "utf-8",
+  );
+
+  return "Success";
+}
+
+function getNetworkSetting(
+  userConfig,
+  settingKey,
+  networkUuid,
+  defaultValue = false,
+) {
+  const keys = settingKey.split(".");
+
+  let curr = userConfig;
+
+  for (const key of keys) {
+    if (curr && typeof curr === "object" && key in curr) {
+      curr = curr[key];
+    } else {
+      return defaultValue;
+    }
+  }
+
+  if (curr && typeof curr === "object" && networkUuid in curr) {
+    return curr[networkUuid];
+  }
+
+  return defaultValue;
 }
 
 module.exports = {
   setRootDir,
   loadUserConfig,
   saveUserSetting,
+  saveNetworkSetting,
+  getNetworkSetting,
+  PER_NETWORK_KEYS,
+  PER_NETWORK_BOOLEAN_KEYS,
 };

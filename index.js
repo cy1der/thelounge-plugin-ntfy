@@ -6,6 +6,8 @@ const {
   setRootDir,
   loadUserConfig,
   saveUserSetting,
+  saveNetworkSetting,
+  PER_NETWORK_KEYS,
 } = require("./src/config.js");
 
 // user -> Map<network.uuid -> handler and client>
@@ -26,10 +28,16 @@ const ntfyCommand = {
       );
       say(`/${command} test - Send a test notification`);
       say(
-        `/${command} config set <setting_key> <setting_value> - Set a configuration setting`,
+        `/${command} config set <setting_key> <setting_value> - Set a global configuration setting`,
       );
       say(
-        `/${command} config remove <setting_key> - Set configuration setting to null`,
+        `/${command} config remove <setting_key> - Set global configuration setting to null`,
+      );
+      say(
+        `/${command} config network set <setting_key> <setting_value> - Set a per-network setting for this network`,
+      );
+      say(
+        `/${command} config network remove <setting_key> - Remove per-network setting for this network`,
       );
       say(
         `/${command} config print - Print the current configuration with warnings if any`,
@@ -229,13 +237,26 @@ const ntfyCommand = {
             const [userConfig, errors] = loadUserConfig(client.client.name);
 
             const sensitiveKeys = new Set(["ntfy.password", "ntfy.token"]);
+            const perNetworkKeys = new Set([
+              "config.notify_on_private_messages",
+            ]);
 
             const printConfig = (obj, parentKey = "") => {
               for (const key in obj) {
                 const value = obj[key];
                 const fullKey = parentKey ? `${parentKey}.${key}` : key;
 
-                if (typeof value === "object" && value !== null) {
+                if (perNetworkKeys.has(fullKey)) {
+                  // Special handling for per-network settings
+                  if (typeof value === "object" && value !== null) {
+                    const networkValue = value[network.uuid];
+                    say(
+                      `${fullKey}=${networkValue !== undefined ? networkValue : "(not set for this network)"}`,
+                    );
+                  } else {
+                    say(`${fullKey}=(not set for this network)`);
+                  }
+                } else if (typeof value === "object" && value !== null) {
                   printConfig(value, fullKey);
                 } else if (sensitiveKeys.has(fullKey) && value) {
                   say(`${fullKey}=********`);
@@ -263,6 +284,78 @@ const ntfyCommand = {
               say(
                 "Warning: Both ntfy.token and ntfy.username/password are set, ntfy.token will be used for authentication",
               );
+            }
+
+            break;
+          }
+
+          case "network": {
+            const networkArgs = subsubcommand.slice(1);
+
+            if (networkArgs.length === 0) {
+              helpMessage();
+              return;
+            }
+
+            if (typeof networkArgs[0] !== "string") {
+              helpMessage();
+              return;
+            }
+
+            switch (networkArgs[0].toLowerCase()) {
+              case "set": {
+                const setArgs = networkArgs.slice(1);
+
+                if (setArgs.length < 2) {
+                  say("Usage: /ntfy config network set <setting_key> <value>");
+                  say(
+                    `Available per-network settings: ${Array.from(PER_NETWORK_KEYS).join(", ")}`,
+                  );
+                  return;
+                }
+
+                const settingKey = setArgs[0];
+                const settingValue = setArgs.slice(1).join(" ");
+                const response = saveNetworkSetting(
+                  client.client.name,
+                  settingKey,
+                  network.uuid,
+                  settingValue,
+                );
+
+                say(response);
+
+                break;
+              }
+
+              case "remove": {
+                const removeArgs = networkArgs.slice(1);
+
+                if (removeArgs.length < 1) {
+                  say("Usage: /ntfy config network remove <setting_key>");
+                  say(
+                    `Available per-network settings: ${Array.from(PER_NETWORK_KEYS).join(", ")}`,
+                  );
+                  return;
+                }
+
+                const settingKey = removeArgs[0];
+                const response = saveNetworkSetting(
+                  client.client.name,
+                  settingKey,
+                  network.uuid,
+                  null,
+                );
+
+                say(response);
+
+                break;
+              }
+
+              default: {
+                helpMessage();
+                break;
+              }
             }
 
             break;

@@ -1,6 +1,6 @@
 "use strict";
 
-const { loadUserConfig } = require("./config.js");
+const { loadUserConfig, getNetworkSetting } = require("./config.js");
 const { PluginLogger } = require("./logger.js");
 
 function createHandler(client, network) {
@@ -23,7 +23,7 @@ function createHandler(client, network) {
       // Mentions always notify
       notify = true;
     } else if (isPM) {
-      // PMs notify only if enabled in config
+      // PMs notify only if enabled in config for this network
       const [uc, errors] = loadUserConfig(client.client.name);
 
       if (errors.length > 0) {
@@ -32,7 +32,14 @@ function createHandler(client, network) {
 
       userConfig = uc;
 
-      if (userConfig.config.notify_on_private_messages) {
+      const notifyOnPMs = getNetworkSetting(
+        userConfig,
+        "config.notify_on_private_messages",
+        network.uuid,
+        false,
+      );
+
+      if (notifyOnPMs) {
         notify = true;
       }
     }
