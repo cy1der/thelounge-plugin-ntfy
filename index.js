@@ -21,10 +21,14 @@ const ntfyCommand = {
 
     const helpMessage = () => {
       say(`${command} command help:`);
-      say(`/${command} start - Start the ntfy listener for this network`);
-      say(`/${command} stop - Stop the ntfy listener for this network`);
       say(
-        `/${command} status - Show the ntfy listener status for this network`,
+        `/${command} start [all] - Start the ntfy listener for this network or all networks if 'all' is specified`,
+      );
+      say(
+        `/${command} stop [all] - Stop the ntfy listener for this network or all networks if 'all' is specified`,
+      );
+      say(
+        `/${command} status [all] - Show the ntfy listener status for this network or all networks if 'all' is specified`,
       );
       say(`/${command} test - Send a test notification`);
       say(
@@ -59,82 +63,221 @@ const ntfyCommand = {
 
     switch (subcommand[0].toLowerCase()) {
       case "start": {
+        let all = false;
         const [_, errors] = loadUserConfig(client.client.name);
+        const subsubcommand = subcommand.slice(1);
+
+        if (
+          typeof subsubcommand[0] === "string" &&
+          subsubcommand.length > 0 &&
+          subsubcommand[0].toLowerCase() === "all"
+        ) {
+          all = true;
+        }
 
         if (errors.length > 0) {
-          say("Cannot start ntfy listener due to invalid configuration:");
+          say(
+            `Cannot start ntfy listener${all ? "s" : ""} due to invalid configuration:`,
+          );
+
           for (const error of errors) {
             say(`- ${error.instancePath} ${error.message}`);
           }
+
           return;
         }
 
         const userListeners = globalActiveListeners.get(client.client.name);
 
-        if (
-          userListeners &&
-          typeof userListeners.has === "function" &&
-          userListeners.has(network.uuid)
-        ) {
-          say("ntfy listener is already running for this network");
-          return;
-        }
+        if (all) {
+          const networks = client.client.networks;
+          let started = 0;
+          let skipped = 0;
 
-        const handler = createHandler(client, network);
-        network.irc.on("privmsg", handler);
+          for (const net of networks) {
+            if (
+              userListeners &&
+              typeof userListeners.has === "function" &&
+              userListeners.has(net.uuid)
+            ) {
+              skipped++;
+              continue;
+            }
 
-        if (!userListeners) {
-          const map = new Map();
-          map.set(network.uuid, { handler: handler, client: client });
-          globalActiveListeners.set(client.client.name, map);
+            const handler = createHandler(client, net);
+            net.irc.on("privmsg", handler);
+
+            if (!userListeners) {
+              const map = new Map();
+              map.set(net.uuid, { handler: handler, client: client });
+              globalActiveListeners.set(client.client.name, map);
+            } else {
+              userListeners.set(net.uuid, {
+                handler: handler,
+                client: client,
+              });
+            }
+
+            started++;
+          }
+
+          if (started === 0 && skipped === 0) {
+            say("No networks available to start ntfy listeners");
+            return;
+          }
+          if (started > 0) {
+            say(
+              `Started ntfy listener${started !== 1 ? "s" : ""} for ${started} network${started !== 1 ? "s" : ""}`,
+            );
+          }
+          if (skipped > 0) {
+            say(
+              `Skipped ${skipped} network${skipped !== 1 ? "s" : ""} because ntfy listener is already running`,
+            );
+          }
         } else {
-          userListeners.set(network.uuid, { handler: handler, client: client });
-        }
+          if (
+            userListeners &&
+            typeof userListeners.has === "function" &&
+            userListeners.has(network.uuid)
+          ) {
+            say("ntfy listener is already running for this network");
+            return;
+          }
 
-        say("ntfy listener started for this network");
+          const handler = createHandler(client, network);
+          network.irc.on("privmsg", handler);
+
+          if (!userListeners) {
+            const map = new Map();
+            map.set(network.uuid, { handler: handler, client: client });
+            globalActiveListeners.set(client.client.name, map);
+          } else {
+            userListeners.set(network.uuid, {
+              handler: handler,
+              client: client,
+            });
+          }
+
+          say("ntfy listener started for this network");
+        }
 
         break;
       }
 
       case "stop": {
-        const userListeners = globalActiveListeners.get(client.client.name);
+        let all = false;
+        const subsubcommand = subcommand.slice(1);
 
         if (
-          !userListeners ||
-          typeof userListeners.has !== "function" ||
-          !userListeners.has(network.uuid)
+          typeof subsubcommand[0] === "string" &&
+          subsubcommand.length > 0 &&
+          subsubcommand[0].toLowerCase() === "all"
         ) {
-          say("ntfy listener is not running for this network");
-          return;
+          all = true;
         }
 
-        const { handler } = userListeners.get(network.uuid);
-        network.irc.removeListener("privmsg", handler);
-        userListeners.delete(network.uuid);
+        const userListeners = globalActiveListeners.get(client.client.name);
 
-        say("ntfy listener stopped for this network");
+        if (all) {
+          const networks = client.client.networks;
+          let stopped = 0;
+          let skipped = 0;
+
+          for (const net of networks) {
+            if (
+              !userListeners ||
+              typeof userListeners.has !== "function" ||
+              !userListeners.has(net.uuid)
+            ) {
+              skipped++;
+              continue;
+            }
+
+            const { handler } = userListeners.get(net.uuid);
+            net.irc.removeListener("privmsg", handler);
+            userListeners.delete(net.uuid);
+            stopped++;
+          }
+
+          if (stopped === 0 && skipped === 0) {
+            say("No networks available to stop ntfy listeners");
+            return;
+          }
+          if (stopped > 0) {
+            say(
+              `Stopped ntfy listener${stopped !== 1 ? "s" : ""} for ${stopped} network${stopped !== 1 ? "s" : ""}`,
+            );
+          }
+          if (skipped > 0) {
+            say(
+              `Skipped ${skipped} network${skipped !== 1 ? "s" : ""} because ntfy listener was not running`,
+            );
+          }
+        } else {
+          if (
+            !userListeners ||
+            typeof userListeners.has !== "function" ||
+            !userListeners.has(network.uuid)
+          ) {
+            say("ntfy listener is not running for this network");
+            return;
+          }
+
+          const { handler } = userListeners.get(network.uuid);
+          network.irc.removeListener("privmsg", handler);
+          userListeners.delete(network.uuid);
+
+          say("ntfy listener stopped for this network");
+        }
 
         break;
       }
 
       case "status": {
-        const userListeners = globalActiveListeners.get(client.client.name);
+        let all = false;
+        const subsubcommand = subcommand.slice(1);
 
         if (
-          userListeners &&
-          typeof userListeners.has === "function" &&
-          userListeners.has(network.uuid)
+          typeof subsubcommand[0] === "string" &&
+          subsubcommand.length > 0 &&
+          subsubcommand[0].toLowerCase() === "all"
         ) {
-          say("ntfy listener is running for this network");
+          all = true;
+        }
+
+        const userListeners = globalActiveListeners.get(client.client.name);
+
+        if (all) {
+          const networks = client.client.networks;
+          for (const net of networks) {
+            if (
+              userListeners &&
+              typeof userListeners.has === "function" &&
+              userListeners.has(net.uuid)
+            ) {
+              say(`${net.name}: running`);
+            } else {
+              say(`${net.name}: not running`);
+            }
+          }
         } else {
-          say("ntfy listener is not running for this network");
+          if (
+            userListeners &&
+            typeof userListeners.has === "function" &&
+            userListeners.has(network.uuid)
+          ) {
+            say("ntfy listener is running for this network");
+          } else {
+            say("ntfy listener is not running for this network");
+          }
         }
 
         break;
       }
 
       case "test": {
-        const { NtfyClient, MessagePriority } = await import("ntfy");
+        const { NtfyClient } = await import("ntfy");
 
         const [userConfig, errors] = loadUserConfig(client.client.name);
 

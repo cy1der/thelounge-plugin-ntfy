@@ -19,9 +19,9 @@ Restart The Lounge after installation
 
 This plugin introduces the `/ntfy` command, subcommands are:
 
-- `/ntfy start`: Start the ntfy listener for the network
-- `/ntfy stop`: Stop the ntfy listener for the network
-- `/ntfy status`: Show the ntfy listener status for this network
+- `/ntfy start [all]`: Start the ntfy listener for the network or all networks if 'all' is specified
+- `/ntfy stop [all]`: Stop the ntfy listener for the network or all networks if 'all' is specified
+- `/ntfy status [all]`: Show the ntfy listener status for this network or all networks if 'all' is specified
 - `/ntfy test`: Send a test notification
 - `/ntfy config`: Config commands
   - `/ntfy config set <setting_key> <setting_value>`: Set a global configuration setting
