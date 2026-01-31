@@ -71,12 +71,12 @@ function createHandler(client, network) {
           };
         }
 
-        const { NtfyClient, MessagePriority } = await import("ntfy");
+        const { NtfyClient } = await import("ntfy");
 
         const ntfyClient = new NtfyClient({
           server: userConfig.ntfy.server,
           topic: userConfig.ntfy.topic,
-          priority: MessagePriority.HIGH,
+          priority: userConfig.ntfy.priority,
           tags: ["speech_balloon"],
           authorization: ntfyAuth,
         });

@@ -19,6 +19,7 @@ const DEFAULT_CONFIG = {
     username: null,
     password: null,
     token: null,
+    priority: 3,
   },
   config: {
     notify_on_private_messages: {}, // Per-network: { "network-uuid": true/false }
@@ -31,8 +32,10 @@ const GLOBAL_KEYS = new Set([
   "ntfy.username",
   "ntfy.password",
   "ntfy.token",
+  "ntfy.priority",
 ]);
 const GLOBAL_BOOLEAN_KEYS = new Set([]);
+const GLOBAL_NUMERIC_KEYS = new Set(["ntfy.priority"]);
 
 const PER_NETWORK_KEYS = new Set(["config.notify_on_private_messages"]);
 const PER_NETWORK_BOOLEAN_KEYS = new Set(["config.notify_on_private_messages"]);
@@ -66,6 +69,13 @@ const userConfigSchema = {
           format: "ntfy-token",
           nullable: true,
           errorMessage: "Invalid ntfy token, must start with 'tk_'",
+        },
+        priority: {
+          type: "integer",
+          minimum: 1,
+          maximum: 5,
+          default: 3,
+          errorMessage: "Priority must be an integer between 1 and 5",
         },
       },
       allOf: [
@@ -258,6 +268,18 @@ function saveUserSetting(username, settingKey, settingValue) {
         }
       } catch {
         return `Invalid value for ${settingKey}, expected a boolean`;
+      }
+    }
+
+    if (GLOBAL_NUMERIC_KEYS.has(settingKey)) {
+      try {
+        settingValue = settingValue ? Number(settingValue) : NaN;
+
+        if (isNaN(settingValue) || typeof settingValue !== "number") {
+          return `Invalid value for ${settingKey}, expected a number`;
+        }
+      } catch {
+        return `Invalid value for ${settingKey}, expected a number`;
       }
     }
 

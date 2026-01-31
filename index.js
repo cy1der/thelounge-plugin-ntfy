@@ -160,7 +160,7 @@ const ntfyCommand = {
         const ntfyClient = new NtfyClient({
           server: userConfig.ntfy.server,
           topic: userConfig.ntfy.topic,
-          priority: MessagePriority.HIGH,
+          priority: userConfig.ntfy.priority,
           tags: ["speech_balloon"],
           authorization: ntfyAuth,
         });
