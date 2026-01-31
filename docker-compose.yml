@@ -12,3 +12,6 @@ services:
       - $PWD/index.js:/var/opt/thelounge/packages/thelounge-plugin-ntfy/index.js
       - $PWD/package.json:/var/opt/thelounge/packages/thelounge-plugin-ntfy/package.json
       - $PWD/package-lock.json:/var/opt/thelounge/packages/thelounge-plugin-ntfy/package-lock.json
+
+# Installation: su node -c "thelounge install file:/var/opt/thelounge/packages/thelounge-plugin-ntfy"
+# Removal: su node -c "thelounge uninstall thelounge-plugin-ntfy"

@@ -5,6 +5,12 @@ const path = require("path");
 const Ajv2019 = require("ajv/dist/2019").default;
 const addFormats = require("ajv-formats");
 const addErrors = require("ajv-errors");
+const {
+  initEncryptionKey,
+  encrypt,
+  decrypt,
+  isEncrypted,
+} = require("./crypto.js");
 
 const DEFAULT_CONFIG = {
   ntfy: {
@@ -29,6 +35,8 @@ const ALLOWED_KEYS = new Set([
 ]);
 
 const BOOLEAN_KEYS = new Set(["config.notify_on_private_messages"]);
+
+const SENSITIVE_KEYS = new Set(["ntfy.password", "ntfy.token"]);
 
 const userConfigSchema = {
   type: "object",
@@ -121,6 +129,38 @@ let rootDir = null;
 
 function setRootDir(dir) {
   rootDir = dir;
+  initEncryptionKey(dir);
+}
+
+function decryptSensitiveFields(config) {
+  const decrypted = JSON.parse(JSON.stringify(config)); // Deep clone
+
+  for (const key of SENSITIVE_KEYS) {
+    const keys = key.split(".");
+    let curr = decrypted;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (curr[keys[i]]) {
+        curr = curr[keys[i]];
+      } else {
+        curr = null;
+        break;
+      }
+    }
+
+    if (curr) {
+      const finalKey = keys[keys.length - 1];
+      if (curr[finalKey] && isEncrypted(curr[finalKey])) {
+        try {
+          curr[finalKey] = decrypt(curr[finalKey]);
+        } catch (e) {
+          // Leave as-is
+        }
+      }
+    }
+  }
+
+  return decrypted;
 }
 
 function loadUserConfig(username) {
@@ -142,15 +182,44 @@ function loadUserConfig(username) {
       userConfig = JSON.parse(fs.readFileSync(userConfigPath, "utf-8"));
     } catch (e) {
       throw new Error(
-        `Invalid JSON in user config for ${username}: ${e.message}`
+        `Invalid JSON in user config for ${username}: ${e.message}`,
       );
     }
+
+    userConfig = decryptSensitiveFields(userConfig);
 
     const validate = ajv.compile(userConfigSchema);
     const valid = validate(userConfig);
 
     return [userConfig, valid ? [] : validate.errors];
   }
+}
+
+function encryptSensitiveFields(config) {
+  const encrypted = JSON.parse(JSON.stringify(config)); // Deep clone
+
+  for (const key of SENSITIVE_KEYS) {
+    const keys = key.split(".");
+    let curr = encrypted;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (curr[keys[i]]) {
+        curr = curr[keys[i]];
+      } else {
+        curr = null;
+        break;
+      }
+    }
+
+    if (curr) {
+      const finalKey = keys[keys.length - 1];
+      if (curr[finalKey] && !isEncrypted(curr[finalKey])) {
+        curr[finalKey] = encrypt(curr[finalKey]);
+      }
+    }
+  }
+
+  return encrypted;
 }
 
 function saveUserSetting(username, settingKey, settingValue) {
@@ -192,20 +261,22 @@ function saveUserSetting(username, settingKey, settingValue) {
 
     curr[keys[keys.length - 1]] = settingValue;
 
+    const configToSave = encryptSensitiveFields(userConfig);
+
     const userConfigPath = path.join(rootDir, "config", `${username}.json`);
 
     fs.mkdirSync(path.dirname(userConfigPath), { recursive: true });
     fs.writeFileSync(
       userConfigPath,
-      JSON.stringify(userConfig, null, 2),
-      "utf-8"
+      JSON.stringify(configToSave, null, 2),
+      "utf-8",
     );
 
     return "Success";
   }
 
   return `Invalid setting ${settingKey}, allowed settings are: ${Array.from(
-    ALLOWED_KEYS
+    ALLOWED_KEYS,
   ).join(", ")}`;
 }
 

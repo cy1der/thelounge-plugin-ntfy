@@ -22,17 +22,17 @@ const ntfyCommand = {
       say(`/${command} start - Start the ntfy listener for this network`);
       say(`/${command} stop - Stop the ntfy listener for this network`);
       say(
-        `/${command} status - Show the ntfy listener status for this network`
+        `/${command} status - Show the ntfy listener status for this network`,
       );
       say(`/${command} test - Send a test notification`);
       say(
-        `/${command} config set <setting_key> <setting_value> - Set a configuration setting`
+        `/${command} config set <setting_key> <setting_value> - Set a configuration setting`,
       );
       say(
-        `/${command} config remove <setting_key> - Set configuration setting to null`
+        `/${command} config remove <setting_key> - Set configuration setting to null`,
       );
       say(
-        `/${command} config print - Print the current configuration with warnings if any`
+        `/${command} config print - Print the current configuration with warnings if any`,
       );
     };
 
@@ -197,7 +197,7 @@ const ntfyCommand = {
             const response = saveUserSetting(
               client.client.name,
               settingKey,
-              settingValue
+              settingValue,
             );
 
             say(response);
@@ -217,7 +217,7 @@ const ntfyCommand = {
             const response = saveUserSetting(
               client.client.name,
               settingKey,
-              null
+              null,
             );
 
             say(response);
@@ -228,6 +228,8 @@ const ntfyCommand = {
           case "print": {
             const [userConfig, errors] = loadUserConfig(client.client.name);
 
+            const sensitiveKeys = new Set(["ntfy.password", "ntfy.token"]);
+
             const printConfig = (obj, parentKey = "") => {
               for (const key in obj) {
                 const value = obj[key];
@@ -235,6 +237,8 @@ const ntfyCommand = {
 
                 if (typeof value === "object" && value !== null) {
                   printConfig(value, fullKey);
+                } else if (sensitiveKeys.has(fullKey) && value) {
+                  say(`${fullKey}=********`);
                 } else {
                   say(`${fullKey}=${value}`);
                 }
@@ -257,7 +261,7 @@ const ntfyCommand = {
               userConfig.ntfy.password
             ) {
               say(
-                "Warning: Both ntfy.token and ntfy.username/password are set, ntfy.token will be used for authentication"
+                "Warning: Both ntfy.token and ntfy.username/password are set, ntfy.token will be used for authentication",
               );
             }
 
