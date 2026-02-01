@@ -87,7 +87,12 @@ const ntfyCommand = {
           return;
         }
 
-        const userListeners = globalActiveListeners.get(client.client.name);
+        let userListeners = globalActiveListeners.get(client.client.name);
+
+        if (!userListeners) {
+          userListeners = new Map();
+          globalActiveListeners.set(client.client.name, userListeners);
+        }
 
         if (all) {
           const networks = client.client.networks;
@@ -95,11 +100,7 @@ const ntfyCommand = {
           let skipped = 0;
 
           for (const net of networks) {
-            if (
-              userListeners &&
-              typeof userListeners.has === "function" &&
-              userListeners.has(net.uuid)
-            ) {
+            if (userListeners.has(net.uuid)) {
               skipped++;
               continue;
             }
@@ -107,16 +108,7 @@ const ntfyCommand = {
             const handler = createHandler(client, net);
             net.irc.on("privmsg", handler);
 
-            if (!userListeners) {
-              const map = new Map();
-              map.set(net.uuid, { handler: handler, client: client });
-              globalActiveListeners.set(client.client.name, map);
-            } else {
-              userListeners.set(net.uuid, {
-                handler: handler,
-                client: client,
-              });
-            }
+            userListeners.set(net.uuid, { handler: handler, client: client });
 
             started++;
           }
@@ -136,11 +128,7 @@ const ntfyCommand = {
             );
           }
         } else {
-          if (
-            userListeners &&
-            typeof userListeners.has === "function" &&
-            userListeners.has(network.uuid)
-          ) {
+          if (userListeners.has(network.uuid)) {
             say("ntfy listener is already running for this network");
             return;
           }
@@ -148,16 +136,7 @@ const ntfyCommand = {
           const handler = createHandler(client, network);
           network.irc.on("privmsg", handler);
 
-          if (!userListeners) {
-            const map = new Map();
-            map.set(network.uuid, { handler: handler, client: client });
-            globalActiveListeners.set(client.client.name, map);
-          } else {
-            userListeners.set(network.uuid, {
-              handler: handler,
-              client: client,
-            });
-          }
+          userListeners.set(network.uuid, { handler: handler, client: client });
 
           say("ntfy listener started for this network");
         }
@@ -177,7 +156,12 @@ const ntfyCommand = {
           all = true;
         }
 
-        const userListeners = globalActiveListeners.get(client.client.name);
+        let userListeners = globalActiveListeners.get(client.client.name);
+
+        if (!userListeners) {
+          userListeners = new Map();
+          globalActiveListeners.set(client.client.name, userListeners);
+        }
 
         if (all) {
           const networks = client.client.networks;
@@ -185,18 +169,16 @@ const ntfyCommand = {
           let skipped = 0;
 
           for (const net of networks) {
-            if (
-              !userListeners ||
-              typeof userListeners.has !== "function" ||
-              !userListeners.has(net.uuid)
-            ) {
+            if (!userListeners.has(net.uuid)) {
               skipped++;
               continue;
             }
 
             const { handler } = userListeners.get(net.uuid);
             net.irc.removeListener("privmsg", handler);
+
             userListeners.delete(net.uuid);
+
             stopped++;
           }
 
@@ -215,17 +197,14 @@ const ntfyCommand = {
             );
           }
         } else {
-          if (
-            !userListeners ||
-            typeof userListeners.has !== "function" ||
-            !userListeners.has(network.uuid)
-          ) {
+          if (!userListeners.has(network.uuid)) {
             say("ntfy listener is not running for this network");
             return;
           }
 
           const { handler } = userListeners.get(network.uuid);
           network.irc.removeListener("privmsg", handler);
+
           userListeners.delete(network.uuid);
 
           say("ntfy listener stopped for this network");
@@ -246,27 +225,24 @@ const ntfyCommand = {
           all = true;
         }
 
-        const userListeners = globalActiveListeners.get(client.client.name);
+        let userListeners = globalActiveListeners.get(client.client.name);
+
+        if (!userListeners) {
+          userListeners = new Map();
+          globalActiveListeners.set(client.client.name, userListeners);
+        }
 
         if (all) {
           const networks = client.client.networks;
           for (const net of networks) {
-            if (
-              userListeners &&
-              typeof userListeners.has === "function" &&
-              userListeners.has(net.uuid)
-            ) {
+            if (userListeners.has(net.uuid)) {
               say(`${net.name}: running`);
             } else {
               say(`${net.name}: not running`);
             }
           }
         } else {
-          if (
-            userListeners &&
-            typeof userListeners.has === "function" &&
-            userListeners.has(network.uuid)
-          ) {
+          if (userListeners.has(network.uuid)) {
             say("ntfy listener is running for this network");
           } else {
             say("ntfy listener is not running for this network");
