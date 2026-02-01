@@ -122,7 +122,7 @@ const userConfigSchema = {
       properties: {
         notify_on_private_messages: {
           type: "object",
-          additionalProperties: { type: ["boolean", "string"] },
+          additionalProperties: { type: "boolean" },
           default: {},
         },
       },

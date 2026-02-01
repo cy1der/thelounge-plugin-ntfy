@@ -10,11 +10,21 @@ function createHandler(client, network) {
       return;
     }
 
+    const isPM = data.target === network.nick;
+
+    const channel = isPM
+      ? network.channels.find((chan) => chan.name === data.nick)
+      : network.channels.find((chan) => chan.name === data.target);
+
+    if (channel.muted) {
+      // Ignore messages in muted channels
+      return;
+    }
+
     const highlightRegex = new RegExp(network.highlightRegex, "i");
     const message = data.message || "";
 
     const mentioned = highlightRegex.test(message);
-    const isPM = data.target === network.nick;
 
     let notify = false;
     let userConfig;
