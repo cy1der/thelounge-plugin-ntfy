@@ -3,6 +3,13 @@
 const { loadUserConfig, getNetworkSetting } = require("./config.js");
 const { PluginLogger } = require("./logger.js");
 
+function stripIrcFormatting(message) {
+  return message.replace(
+    /[\x02\x0F\x16\x1D\x1F]|(?:\x03(?:\d{1,2}(?:,\d{1,2})?)?)/g,
+    "",
+  );
+}
+
 function createHandler(client, network) {
   return async (data) => {
     // Ignore own messages
@@ -95,7 +102,7 @@ function createHandler(client, network) {
           title: isPM
             ? `${network.name}: ${data.nick}`
             : `${network.name} ${data.target}: ${data.nick}`,
-          message: message,
+          message: stripIrcFormatting(message),
         });
       } catch (e) {
         PluginLogger.error("Failed to send ntfy notification", e);

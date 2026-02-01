@@ -7,7 +7,6 @@ const {
   loadUserConfig,
   saveUserSetting,
   saveNetworkSetting,
-  PER_NETWORK_KEYS,
 } = require("./src/config.js");
 
 // user -> Map<network.uuid -> handler and client>
@@ -426,10 +425,7 @@ const ntfyCommand = {
                 const setArgs = networkArgs.slice(1);
 
                 if (setArgs.length < 2) {
-                  say("Usage: /ntfy config network set <setting_key> <value>");
-                  say(
-                    `Available per-network settings: ${Array.from(PER_NETWORK_KEYS).join(", ")}`,
-                  );
+                  helpMessage();
                   return;
                 }
 
@@ -451,10 +447,7 @@ const ntfyCommand = {
                 const removeArgs = networkArgs.slice(1);
 
                 if (removeArgs.length < 1) {
-                  say("Usage: /ntfy config network remove <setting_key>");
-                  say(
-                    `Available per-network settings: ${Array.from(PER_NETWORK_KEYS).join(", ")}`,
-                  );
+                  helpMessage();
                   return;
                 }
 
