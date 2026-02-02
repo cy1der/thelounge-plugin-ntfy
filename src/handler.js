@@ -19,13 +19,18 @@ function createHandler(client, network) {
 
     const isPM = data.target === network.nick;
 
-    const channel = isPM
-      ? network.channels.find((chan) => chan.name === data.nick)
-      : network.channels.find((chan) => chan.name === data.target);
+    try {
+      const channel = isPM
+        ? network.channels.find((chan) => chan.name === data.nick)
+        : network.channels.find((chan) => chan.name === data.target);
 
-    if (channel.muted) {
-      // Ignore messages in muted channels
-      return;
+      if (channel && channel.muted) {
+        // Ignore messages in muted channels
+        return;
+      }
+    } catch (e) {
+      PluginLogger.error("Failed to determine channel mute status", e);
+      PluginLogger.debug(`Data: ${JSON.stringify(data)}`);
     }
 
     const highlightRegex = new RegExp(network.highlightRegex, "i");
