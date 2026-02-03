@@ -397,6 +397,4 @@ module.exports = {
   saveUserSetting,
   saveNetworkSetting,
   getNetworkSetting,
-  PER_NETWORK_KEYS,
-  PER_NETWORK_BOOLEAN_KEYS,
 };

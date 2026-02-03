@@ -32,10 +32,6 @@ function initEncryptionKey(configDir) {
   }
 }
 
-function isInitialized() {
-  return encryptionKey !== null;
-}
-
 function encrypt(plaintext) {
   if (!encryptionKey) {
     throw new Error("Encryption key not initialized");
@@ -103,9 +99,7 @@ function isEncrypted(value) {
 
 module.exports = {
   initEncryptionKey,
-  isInitialized,
   encrypt,
   decrypt,
   isEncrypted,
-  ENCRYPTED_PREFIX,
 };
