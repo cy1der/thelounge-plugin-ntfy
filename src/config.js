@@ -139,6 +139,17 @@ ajv.addFormat("ntfy-token", {
 
 let rootDir = null;
 
+let serverConfig;
+
+const ServerConfig = {
+  init: (config) => {
+    serverConfig = config;
+  },
+  get: () => {
+    return serverConfig;
+  },
+};
+
 function setRootDir(dir) {
   rootDir = dir;
   initEncryptionKey(dir);
@@ -397,4 +408,5 @@ module.exports = {
   saveUserSetting,
   saveNetworkSetting,
   getNetworkSetting,
+  ServerConfig,
 };

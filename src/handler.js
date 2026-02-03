@@ -1,6 +1,10 @@
 "use strict";
 
-const { loadUserConfig, getNetworkSetting } = require("./config.js");
+const {
+  loadUserConfig,
+  getNetworkSetting,
+  ServerConfig,
+} = require("./config.js");
 const { PluginLogger } = require("./logger.js");
 
 function stripIrcFormatting(message) {
@@ -19,19 +23,18 @@ function createHandler(client, network) {
 
     const isPM = data.target === network.nick;
 
-    try {
-      const channel = isPM
-        ? network.channels.find((chan) => chan.name === data.nick)
-        : network.channels.find((chan) => chan.name === data.target);
+    const channel = isPM
+      ? network.channels.find((chan) => chan.name === data.nick)
+      : network.channels.find((chan) => chan.name === data.target);
 
-      if (channel && channel.muted) {
-        // Ignore messages in muted channels
-        return;
-      }
-    } catch (e) {
-      PluginLogger.error("Failed to determine channel mute status", e);
-      PluginLogger.debug(`Data: ${JSON.stringify(data)}`);
+    if (channel && channel.muted) {
+      // Ignore messages in muted channels
+      return;
     }
+
+    const channelUrl = ServerConfig.get().baseUrl
+      ? new URL(`/#/chan-${channel.id}`, ServerConfig.get().baseUrl)
+      : null;
 
     const highlightRegex = new RegExp(network.highlightRegex, "i");
     const message = data.message || "";
@@ -108,6 +111,16 @@ function createHandler(client, network) {
             ? `${network.name}: ${data.nick}`
             : `${network.name} ${data.target}: ${data.nick}`,
           message: stripIrcFormatting(message),
+          clickURL: channelUrl ? channelUrl.toString() : undefined,
+          actions: channelUrl
+            ? [
+                {
+                  label: "Open",
+                  type: "view",
+                  url: channelUrl.toString(),
+                },
+              ]
+            : undefined,
         });
       } catch (e) {
         PluginLogger.error("Failed to send ntfy notification", e);

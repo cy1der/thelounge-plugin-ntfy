@@ -7,6 +7,7 @@ const {
   loadUserConfig,
   saveUserSetting,
   saveNetworkSetting,
+  ServerConfig,
 } = require("./src/config.js");
 
 // user -> Map<network.uuid -> handler and client>
@@ -497,6 +498,8 @@ const ntfyCommand = {
 module.exports = {
   onServerStart(tl) {
     PluginLogger.init(tl.Logger);
+
+    ServerConfig.init(tl.Config.getConfig());
 
     const configDir = tl.Config.getPersistentStorageDir();
     setRootDir(configDir);

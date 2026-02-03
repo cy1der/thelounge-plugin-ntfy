@@ -13,6 +13,15 @@ Via the `thelounge` command line:
 thelounge install thelounge-plugin-ntfy
 ```
 
+If you want notifications to open the channel when clicked, add a `baseUrl` entry in the `config.js` of your instance:
+
+```js
+"use strict";
+module.exports = {
+  baseUrl: "https://thelounge.example.com",
+  // rest of config...
+```
+
 Restart The Lounge after installation
 
 ## Usage
