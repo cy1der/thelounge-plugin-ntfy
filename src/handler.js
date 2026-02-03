@@ -103,7 +103,7 @@ function createHandler(client, network) {
           authorization: ntfyAuth,
         });
 
-        ntfyClient.publish({
+        await ntfyClient.publish({
           title: isPM
             ? `${network.name}: ${data.nick}`
             : `${network.name} ${data.target}: ${data.nick}`,

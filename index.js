@@ -252,39 +252,42 @@ const ntfyCommand = {
       }
 
       case "test": {
-        const { NtfyClient } = await import("ntfy");
-
-        const [userConfig, errors] = loadUserConfig(client.client.name);
-
-        if (errors.length > 0) {
-          say("Cannot test ntfy due to invalid configuration:");
-          for (const error of errors) {
-            say(`- ${error.instancePath} ${error.message}`);
-          }
-          return;
-        }
-
-        let ntfyAuth;
-
-        if (userConfig.ntfy.token) {
-          ntfyAuth = userConfig.ntfy.token;
-        } else if (userConfig.ntfy.username && userConfig.ntfy.password) {
-          ntfyAuth = {
-            username: userConfig.ntfy.username,
-            password: userConfig.ntfy.password,
-          };
-        }
-
-        const ntfyClient = new NtfyClient({
-          server: userConfig.ntfy.server,
-          topic: userConfig.ntfy.topic,
-          priority: userConfig.ntfy.priority,
-          tags: ["speech_balloon"],
-          authorization: ntfyAuth,
-        });
-
         try {
-          ntfyClient.publish({
+          const { NtfyClient } = await import("ntfy");
+
+          const [userConfig, errors] = loadUserConfig(client.client.name);
+
+          if (errors.length > 0) {
+            say("Cannot test ntfy due to invalid configuration:");
+            for (const error of errors) {
+              say(`- ${error.instancePath} ${error.message}`);
+            }
+            return;
+          }
+
+          let ntfyAuth;
+
+          if (userConfig.ntfy.token) {
+            ntfyAuth = {
+              username: "",
+              password: userConfig.ntfy.token,
+            };
+          } else if (userConfig.ntfy.username && userConfig.ntfy.password) {
+            ntfyAuth = {
+              username: userConfig.ntfy.username,
+              password: userConfig.ntfy.password,
+            };
+          }
+
+          const ntfyClient = new NtfyClient({
+            server: userConfig.ntfy.server,
+            topic: userConfig.ntfy.topic,
+            priority: userConfig.ntfy.priority,
+            tags: ["speech_balloon"],
+            authorization: ntfyAuth,
+          });
+
+          await ntfyClient.publish({
             title: `${network.name} #afakechannel: ntfy`,
             message: `Hello, ${client.client.name}!`,
           });
