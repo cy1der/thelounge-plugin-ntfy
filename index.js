@@ -501,9 +501,21 @@ module.exports = {
 
     ServerConfig.init(tl.Config.getConfig());
 
+    if (ServerConfig.get().baseUrl) {
+      try {
+        const url = new URL(ServerConfig.get().baseUrl);
+        PluginLogger.info(
+          `Using baseUrl from server configuration: ${url.toString()}`,
+        );
+      } catch (error) {
+        PluginLogger.error(
+          `Invalid baseUrl in server configuration: ${ServerConfig.get().baseUrl}`,
+        );
+      }
+    }
+
     const configDir = tl.Config.getPersistentStorageDir();
     setRootDir(configDir);
-    PluginLogger.info(`[ntfy] Using config directory: ${configDir}`);
 
     tl.Commands.add("ntfy", ntfyCommand);
   },

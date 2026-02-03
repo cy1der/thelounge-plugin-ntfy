@@ -32,9 +32,17 @@ function createHandler(client, network) {
       return;
     }
 
-    const channelUrl = ServerConfig.get().baseUrl
-      ? new URL(`/#/chan-${channel.id}`, ServerConfig.get().baseUrl)
-      : null;
+    let channelUrl = null;
+
+    try {
+      channelUrl = ServerConfig.get().baseUrl
+        ? new URL(`/#/chan-${channel.id}`, ServerConfig.get().baseUrl)
+        : null;
+    } catch (error) {
+      PluginLogger.error(
+        `Failed to construct channel URL for notification: ${error.message}`,
+      );
+    }
 
     const highlightRegex = new RegExp(network.highlightRegex, "i");
     const message = data.message || "";
