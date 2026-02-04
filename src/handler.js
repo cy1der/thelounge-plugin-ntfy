@@ -25,7 +25,9 @@ function createHandler(client, network) {
 
     const channel = isPM
       ? network.channels.find((chan) => chan.name === data.nick)
-      : network.channels.find((chan) => chan.name === data.target);
+      : network.channels.find(
+          (chan) => chan.name === data.target.toLowerCase(),
+        );
 
     if (channel && channel.muted) {
       // Ignore messages in muted channels
@@ -42,8 +44,12 @@ function createHandler(client, network) {
       PluginLogger.error(
         `Failed to construct channel URL for notification: ${error.message}`,
       );
-      PluginLogger.debug(`Payload: ${JSON.stringify(data)}`);
-      PluginLogger.debug(`Channels: ${JSON.stringify(network.channels)}`);
+      PluginLogger.debug(
+        `Payload: ${JSON.stringify({ ...data, message: "[REDACTED]" })}`,
+      );
+      PluginLogger.debug(
+        `Channels: ${JSON.stringify(network.channels.map(({ messages, ...rest }) => rest))}`,
+      );
     }
 
     const highlightRegex = new RegExp(network.highlightRegex, "i");
