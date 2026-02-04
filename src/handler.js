@@ -42,6 +42,8 @@ function createHandler(client, network) {
       PluginLogger.error(
         `Failed to construct channel URL for notification: ${error.message}`,
       );
+      PluginLogger.debug(`Payload: ${JSON.stringify(data)}`);
+      PluginLogger.debug(`Channels: ${JSON.stringify(network.channels)}`);
     }
 
     const highlightRegex = new RegExp(network.highlightRegex, "i");
