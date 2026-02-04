@@ -26,7 +26,7 @@ function createHandler(client, network) {
     const channel = isPM
       ? network.channels.find((chan) => chan.name === data.nick)
       : network.channels.find(
-          (chan) => chan.name === data.target.toLowerCase(),
+          (chan) => chan.name.toLowerCase() === data.target.toLowerCase(),
         );
 
     if (channel && channel.muted) {
